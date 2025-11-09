@@ -86,9 +86,20 @@ public class XMLHandler {
     }
 
     private static String getTagValue(String tag, Element element) {
-        NodeList nodeList = element.getElementsByTagName(tag).item(0).getChildNodes();
+        NodeList nodeList = element.getElementsByTagName(tag);
+        if (nodeList.getLength() == 0) {
+            return "";
+        }
         Node node = nodeList.item(0);
-        return node != null ? node.getNodeValue() : "";
+        if (node == null) {
+            return "";
+        }
+        NodeList childNodes = node.getChildNodes();
+        if (childNodes.getLength() == 0) {
+            return "";
+        }
+        Node textNode = childNodes.item(0);
+        return textNode != null && textNode.getNodeValue() != null ? textNode.getNodeValue() : "";
     }
 
     private static void createElement(Document document, Element parent, String name, String value) {
