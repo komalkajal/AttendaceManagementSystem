@@ -15,22 +15,31 @@ RUN mvn clean package -DskipTests
 # Create webapp directory
 RUN mkdir -p target/webapp && cp -r src/main/webapp/* target/webapp/
 
+# Debug: List all files in target
+RUN echo "=== Checking target directory ===" && \
+    ls -la target/ && \
+    echo "=== Looking for JAR files ===" && \
+    find target -name "*.jar" -type f || echo "No JAR files found"
+
 # Runtime stage
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Copy built JAR and webapp from build stage
-COPY --from=build /app/target/attendance-management-system.jar .
+# Copy webapp and classes
 COPY --from=build /app/target/webapp ./webapp
 COPY --from=build /app/target/classes ./classes
+
+# Copy the JAR file - shade plugin should create it with finalName
+# But we'll use a wildcard to catch any JAR file name
+COPY --from=build /app/target/*.jar ./app.jar
+
+# Verify files are copied
+RUN ls -la && \
+    ls -la webapp/ && \
+    ls -la *.jar || (echo "ERROR: No JAR file found!" && exit 1)
 
 # Expose port (Render will set PORT env variable)
 EXPOSE 8080
 
-# Health check (optional - Render handles this)
-# HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-#   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/index.jsp || exit 1
-
 # Run the application
-CMD ["java", "-jar", "attendance-management-system.jar"]
-
+CMD ["java", "-jar", "app.jar"]
