@@ -60,7 +60,7 @@ public class ReportServlet extends HttpServlet {
     }
 
     private void generateStudentReport(int studentId, HttpServletResponse response, String format)
-            throws SQLException, IOException {
+            throws SQLException, IOException, Exception {
         List<Attendance> attendanceList = attendanceDAO.getAttendanceByStudent(studentId);
         User student = userDAO.getUserById(studentId);
 
