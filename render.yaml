@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: attendance-management-system
+    env: java
+    buildCommand: mvn clean package && mkdir -p target/webapp && cp -r src/main/webapp/* target/webapp/
+    startCommand: java -jar target/attendance-management-system.jar
+    envVars:
+      - key: JDBC_DATABASE_URL
+        sync: false
+      - key: JDBC_DATABASE_USERNAME
+        sync: false
+      - key: JDBC_DATABASE_PASSWORD
+        sync: false
+    healthCheckPath: /index.jsp
+
