@@ -24,17 +24,25 @@ public class EmbeddedTomcatServer {
         
         // Determine webapp directory - try multiple locations
         String webappDirLocation = null;
+        String currentDir = System.getProperty("user.dir");
         String[] possiblePaths = {
+            currentDir + "/webapp",
+            currentDir + "/target/webapp",
+            currentDir + "/src/main/webapp",
+            "webapp",
             "target/webapp",
             "src/main/webapp",
-            "webapp",
-            "src/main/webapp/"
+            "./webapp",
+            "./target/webapp"
         };
         
         for (String path : possiblePaths) {
             Path webappPath = Paths.get(path);
             if (Files.exists(webappPath) && Files.isDirectory(webappPath)) {
-                webappDirLocation = path + (path.endsWith("/") ? "" : "/");
+                webappDirLocation = path;
+                if (!webappDirLocation.endsWith("/") && !webappDirLocation.endsWith(File.separator)) {
+                    webappDirLocation += File.separator;
+                }
                 System.out.println("Using webapp directory: " + webappDirLocation);
                 break;
             }
@@ -42,7 +50,15 @@ public class EmbeddedTomcatServer {
         
         if (webappDirLocation == null) {
             System.err.println("ERROR: Could not find webapp directory!");
+            System.err.println("Current directory: " + currentDir);
             System.err.println("Tried paths: " + String.join(", ", possiblePaths));
+            // List current directory contents for debugging
+            try {
+                File currentDirFile = new File(currentDir);
+                System.err.println("Current directory contents: " + java.util.Arrays.toString(currentDirFile.list()));
+            } catch (Exception e) {
+                System.err.println("Could not list directory: " + e.getMessage());
+            }
             System.exit(1);
         }
         
@@ -50,12 +66,31 @@ public class EmbeddedTomcatServer {
         Context ctx = tomcat.addWebapp("", new File(webappDirLocation).getAbsolutePath());
         
         // Add classes to classpath
-        File classesDir = new File("target/classes");
-        if (classesDir.exists()) {
+        String[] classPaths = {
+            currentDir + "/classes",
+            currentDir + "/target/classes",
+            "classes",
+            "target/classes",
+            "./classes"
+        };
+        
+        File classesDir = null;
+        for (String classPath : classPaths) {
+            File testDir = new File(classPath);
+            if (testDir.exists() && testDir.isDirectory()) {
+                classesDir = testDir;
+                System.out.println("Using classes directory: " + classesDir.getAbsolutePath());
+                break;
+            }
+        }
+        
+        if (classesDir != null && classesDir.exists()) {
             StandardRoot resources = new StandardRoot(ctx);
             resources.addPreResources(new DirResourceSet(resources, "/WEB-INF/classes",
                     classesDir.getAbsolutePath(), "/"));
             ctx.setResources(resources);
+        } else {
+            System.out.println("Warning: Classes directory not found, using JAR classpath");
         }
         
         // Enable JSP support
